@@ -1,0 +1,19 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Feather } from '@expo/vector-icons';
+import { useEffect, useState } from 'react';
+import { FlatList, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { useColors } from '@/hooks/useColors';
+
+type Note = { id: string; title: string; body: string };
+
+export default function NotesScreen() {
+  const colors = useColors();
+  const [notes, setNotes] = useState<Note[]>([]);
+  const [title, setTitle] = useState('');
+  const [body, setBody] = useState('');
+  useEffect(() => { AsyncStorage.getItem('jarvis-notes').then((v) => v && setNotes(JSON.parse(v) as Note[])); }, []);
+  const save = () => { if (!title.trim() && !body.trim()) return; const next = [{ id: `${Date.now()}`, title: title.trim() || 'Untitled note', body: body.trim() }, ...notes]; setNotes(next); AsyncStorage.setItem('jarvis-notes', JSON.stringify(next)); setTitle(''); setBody(''); };
+  const remove = (id: string) => { const next = notes.filter((note) => note.id !== id); setNotes(next); AsyncStorage.setItem('jarvis-notes', JSON.stringify(next)); };
+  return <View style={[styles.screen, { backgroundColor: colors.background }]}><Text style={[styles.heading, { color: colors.foreground }]}>Notes</Text><Text style={[styles.subheading, { color: colors.mutedForeground }]}>Keep the thoughts worth returning to.</Text><View style={[styles.editor, { backgroundColor: colors.card, borderColor: colors.border }]}><TextInput value={title} onChangeText={setTitle} placeholder="Note title" placeholderTextColor={colors.mutedForeground} style={[styles.titleInput, { color: colors.foreground }]} /><TextInput value={body} onChangeText={setBody} placeholder="Capture a thought..." placeholderTextColor={colors.mutedForeground} multiline style={[styles.bodyInput, { color: colors.foreground }]} /><Pressable onPress={save} style={[styles.save, { backgroundColor: colors.primary }]}><Feather name="plus" size={17} color={colors.primaryForeground} /><Text style={[styles.saveText, { color: colors.primaryForeground }]}>Save note</Text></Pressable></View><FlatList data={notes} keyExtractor={(item) => item.id} contentContainerStyle={styles.list} ListEmptyComponent={<Text style={[styles.empty, { color: colors.mutedForeground }]}>Your saved notes will appear here.</Text>} renderItem={({ item }) => <View style={[styles.note, { backgroundColor: colors.card, borderColor: colors.border }]}><View style={styles.noteTop}><Text style={[styles.noteTitle, { color: colors.foreground }]}>{item.title}</Text><Pressable onPress={() => remove(item.id)}><Feather name="trash-2" size={16} color={colors.mutedForeground} /></Pressable></View><Text style={[styles.noteBody, { color: colors.mutedForeground }]}>{item.body}</Text></View>} /></View>;
+}
+const styles = StyleSheet.create({ screen: { flex: 1, padding: 20 }, heading: { fontSize: 30, fontWeight: '700', marginTop: 8 }, subheading: { fontSize: 14, marginTop: 5, marginBottom: 20 }, editor: { borderRadius: 18, borderWidth: 1, padding: 14 }, titleInput: { fontSize: 17, fontWeight: '600', paddingVertical: 5 }, bodyInput: { minHeight: 70, fontSize: 14, paddingVertical: 8, textAlignVertical: 'top' }, save: { alignSelf: 'flex-end', flexDirection: 'row', gap: 7, alignItems: 'center', paddingHorizontal: 14, paddingVertical: 10, borderRadius: 12, marginTop: 8 }, saveText: { fontWeight: '700', fontSize: 13 }, list: { paddingTop: 18, gap: 10, paddingBottom: 30 }, empty: { textAlign: 'center', paddingVertical: 24 }, note: { borderWidth: 1, borderRadius: 16, padding: 15 }, noteTop: { flexDirection: 'row', justifyContent: 'space-between', gap: 10 }, noteTitle: { fontSize: 16, fontWeight: '700', flex: 1 }, noteBody: { fontSize: 14, lineHeight: 20, marginTop: 7 } });
