@@ -28,6 +28,12 @@
         }
       ],
       "expo-font",
+      [
+        "expo-av",
+        {
+          "microphonePermission": "Allow Prince Jarvis to listen to your voice."
+        }
+      ],
       "expo-web-browser"
     ],
     "experiments": {

@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Feather } from '@expo/vector-icons';
+import { Audio } from 'expo-av';
 import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
@@ -40,6 +41,8 @@ export default function HomeScreen() {
   const [input, setInput] = useState('');
   const [isThinking, setIsThinking] = useState(false);
   const [isListening, setIsListening] = useState(false);
+  const [recording, setRecording] = useState<Audio.Recording | null>(null);
+  const [voiceError, setVoiceError] = useState('');
   const listRef = useRef<FlatList<Message>>(null);
 
   useEffect(() => {
@@ -63,6 +66,42 @@ export default function HomeScreen() {
       setMessages((current) => [...current, { id: `${Date.now()}-a`, role: 'assistant', text: localReply(text) }]);
       setIsThinking(false);
     }, 700);
+  };
+
+  const toggleRecording = async () => {
+    setVoiceError('');
+    if (recording) {
+      try {
+        await recording.stopAndUnloadAsync();
+        setRecording(null);
+        setIsListening(false);
+        setMessages((current) => [...current, {
+          id: `${Date.now()}-voice`,
+          role: 'user',
+          text: 'Voice note captured. Transcription will be added with AI voice services.',
+        }]);
+      } catch {
+        setVoiceError('Could not stop the recording. Please try again.');
+      }
+      return;
+    }
+    try {
+      const permission = await Audio.requestPermissionsAsync();
+      if (!permission.granted) {
+        setVoiceError('Microphone permission is needed for voice input.');
+        return;
+      }
+      await Audio.setAudioModeAsync({ allowsRecordingIOS: true, playsInSilentModeIOS: true });
+      const nextRecording = new Audio.Recording();
+      await nextRecording.prepareToRecordAsync(Audio.RecordingOptionsPresets.HIGH_QUALITY);
+      await nextRecording.startAsync();
+      setRecording(nextRecording);
+      setIsListening(true);
+    } catch {
+      setVoiceError('Voice input is not available right now.');
+      setRecording(null);
+      setIsListening(false);
+    }
   };
 
   return (
@@ -107,10 +146,11 @@ export default function HomeScreen() {
       />
 
       <View style={[styles.composerWrap, { paddingBottom: Math.max(insets.bottom, 12), backgroundColor: colors.background }]}>
-        {isListening && <View style={[styles.listening, { backgroundColor: colors.accent }]}><View style={[styles.pulse, { backgroundColor: colors.primary }]} /><Text style={[styles.listeningText, { color: colors.foreground }]}>Listening... tap the mic when you’re done</Text></View>}
+        {isListening && <View style={[styles.listening, { backgroundColor: colors.accent }]}><View style={[styles.pulse, { backgroundColor: colors.primary }]} /><Text style={[styles.listeningText, { color: colors.foreground }]}>Recording... tap the mic when you’re done</Text></View>}
+        {!!voiceError && <Text style={[styles.voiceError, { color: colors.destructive }]}>{voiceError}</Text>}
         <View style={[styles.composer, { backgroundColor: colors.card, borderColor: isListening ? colors.primary : colors.border }]}>
           <TextInput value={input} onChangeText={setInput} onSubmitEditing={() => send()} placeholder="Ask Prince Jarvis anything..." placeholderTextColor={colors.mutedForeground} style={[styles.input, { color: colors.foreground }]} multiline maxLength={500} />
-          <Pressable accessibilityLabel="Voice chat" testID="voice-button" onPress={() => setIsListening((current) => !current)} style={[styles.iconButton, { backgroundColor: isListening ? colors.primary : colors.secondary }]}><Feather name={isListening ? 'square' : 'mic'} size={18} color={isListening ? colors.primaryForeground : colors.foreground} /></Pressable>
+          <Pressable accessibilityLabel={isListening ? 'Stop voice recording' : 'Start voice recording'} testID="voice-button" onPress={toggleRecording} style={[styles.iconButton, { backgroundColor: isListening ? colors.primary : colors.secondary }]}><Feather name={isListening ? 'square' : 'mic'} size={18} color={isListening ? colors.primaryForeground : colors.foreground} /></Pressable>
           <Pressable accessibilityLabel="Send message" testID="send-button" onPress={() => send()} style={[styles.sendButton, { backgroundColor: colors.primary }]}><Feather name="arrow-up" size={20} color={colors.primaryForeground} /></Pressable>
         </View>
         <Text style={[styles.disclaimer, { color: colors.mutedForeground }]}>Jarvis can make mistakes. Check important information.</Text>
@@ -152,4 +192,5 @@ const styles = StyleSheet.create({
   listening: { flexDirection: 'row', alignItems: 'center', gap: 8, padding: 10, borderRadius: 14, marginBottom: 8 },
   pulse: { width: 8, height: 8, borderRadius: 4 },
   listeningText: { fontSize: 12, fontWeight: '600' },
+  voiceError: { fontSize: 12, textAlign: 'center', paddingVertical: 5 },
 });
