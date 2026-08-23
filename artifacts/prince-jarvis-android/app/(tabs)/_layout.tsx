@@ -19,18 +19,6 @@ function NativeTabLayout() {
         <Icon sf={{ default: 'house', selected: 'house.fill' }} />
         <Label>Home</Label>
       </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="notes">
-        <Icon sf={{ default: 'note.text', selected: 'note.text' }} />
-        <Label>Notes</Label>
-      </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="reminders">
-        <Icon sf={{ default: 'bell', selected: 'bell.fill' }} />
-        <Label>Reminders</Label>
-      </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="search">
-        <Icon sf={{ default: 'magnifyingglass', selected: 'magnifyingglass' }} />
-        <Label>Search</Label>
-      </NativeTabs.Trigger>
     </NativeTabs>
   );
 }
@@ -47,7 +35,7 @@ function ClassicTabLayout() {
       screenOptions={{
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.mutedForeground,
-        headerShown: true,
+        headerShown: false,
         tabBarStyle: {
           position: 'absolute',
           backgroundColor: isIOS ? 'transparent' : colors.background,
@@ -85,9 +73,6 @@ function ClassicTabLayout() {
             ),
         }}
       />
-      <Tabs.Screen name="notes" options={{ title: 'Notes', tabBarIcon: ({ color }) => <Feather name="file-text" size={22} color={color} /> }} />
-      <Tabs.Screen name="reminders" options={{ title: 'Reminders', tabBarIcon: ({ color }) => <Feather name="bell" size={22} color={color} /> }} />
-      <Tabs.Screen name="search" options={{ title: 'Search', tabBarIcon: ({ color }) => <Feather name="search" size={22} color={color} /> }} />
     </Tabs>
   );
 }
