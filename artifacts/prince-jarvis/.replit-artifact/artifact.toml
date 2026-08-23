@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "Prince Jarvis AI Assistant"
+description = "A personal AI assistant with a refined royal personality, designed for natural conversation, quick prompts, and helpful everyday guidance."
+version = "1.0.0"
+id = "artifacts/prince-jarvis"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 19929
+
+[services.development]
+run = "pnpm --filter @workspace/prince-jarvis run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/prince-jarvis", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/prince-jarvis/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "19929"
+BASE_PATH = "/"
