@@ -77,14 +77,39 @@ export default function HomeScreen() {
   const [search, setSearch] = useState('');
   const [createStep, setCreateStep] = useState(0);
   const [personality, setPersonality] = useState('Royal & helpful');
+  const [isHydrated, setIsHydrated] = useState(false);
   const listRef = useRef<FlatList<Message>>(null);
+  const responseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    AsyncStorage.getItem('jarvis-chat').then((value) => {
-      if (value) setMessages(JSON.parse(value) as Message[]);
-    });
+    let isMounted = true;
+    AsyncStorage.getItem('jarvis-chat')
+      .then((value) => {
+        if (!isMounted) return;
+        if (value) {
+          try {
+            const saved = JSON.parse(value) as Message[];
+            if (Array.isArray(saved) && saved.length > 0) setMessages(saved);
+          } catch {
+            // Ignore malformed local data and start with the welcome message.
+          }
+        }
+        setIsHydrated(true);
+      })
+      .catch(() => {
+        if (isMounted) setIsHydrated(true);
+      });
+    return () => { isMounted = false; };
   }, []);
-  useEffect(() => { AsyncStorage.setItem('jarvis-chat', JSON.stringify(messages)); }, [messages]);
+  useEffect(() => {
+    if (!isHydrated) return;
+    AsyncStorage.setItem('jarvis-chat', JSON.stringify(messages)).catch(() => {
+      // Chat remains usable if local storage is temporarily unavailable.
+    });
+  }, [isHydrated, messages]);
+  useEffect(() => () => {
+    if (responseTimer.current) clearTimeout(responseTimer.current);
+  }, []);
 
   const pinnedMessages = useMemo(() => messages.filter((message) => message.pinned), [messages]);
   const filteredMessages = useMemo(() => messages.filter((message) => message.text.toLowerCase().includes(search.toLowerCase())), [messages, search]);
@@ -95,7 +120,7 @@ export default function HomeScreen() {
     setInput('');
     setMessages((current) => [...current, { id: `${Date.now()}-u`, role: 'user', text }]);
     setIsThinking(true);
-    setTimeout(() => {
+    responseTimer.current = setTimeout(() => {
       setMessages((current) => [...current, { id: `${Date.now()}-a`, role: 'assistant', text: localReply(text) }]);
       setIsThinking(false);
     }, 650);
@@ -126,7 +151,7 @@ export default function HomeScreen() {
   };
 
   const renderChat = () => (
-    <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+    <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
       <FlatList
         ref={listRef}
         data={messages}
