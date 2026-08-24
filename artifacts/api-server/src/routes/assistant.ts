@@ -6,7 +6,10 @@ const router: IRouter = Router();
 
 function getClient() {
   const key = process.env.OPENAI_API_KEY;
-  return key ? new OpenAI({ apiKey: key }) : null;
+  // Secure secret forms can preserve smart quotes copied around a key.
+  // Normalize only formatting characters; the key value is never logged.
+  const normalizedKey = key?.replace(/[\s"'“”‘’]/g, "");
+  return normalizedKey ? new OpenAI({ apiKey: normalizedKey }) : null;
 }
 
 router.post("/assistant/chat", async (req, res) => {
