@@ -37,6 +37,7 @@ function ClassicTabLayout() {
         tabBarInactiveTintColor: colors.mutedForeground,
         headerShown: false,
         tabBarStyle: {
+          display: 'none',
           position: 'absolute',
           backgroundColor: isIOS ? 'transparent' : colors.background,
           borderTopWidth: isWeb ? 1 : 0,
