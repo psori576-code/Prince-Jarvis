@@ -73,15 +73,30 @@ export default function HomeScreen() {
     if (recording) {
       try {
         await recording.stopAndUnloadAsync();
+        const uri = recording.getURI();
         setRecording(null);
         setIsListening(false);
-        setMessages((current) => [...current, {
-          id: `${Date.now()}-voice`,
-          role: 'user',
-          text: 'Voice note captured. Transcription will be added with AI voice services.',
-        }]);
+        if (!uri) throw new Error('Recording URI unavailable');
+        setIsThinking(true);
+        const audioResponse = await fetch(uri);
+        const audioBlob = await audioResponse.blob();
+        const reader = new FileReader();
+        const base64 = await new Promise<string>((resolve, reject) => {
+          reader.onloadend = () => resolve(String(reader.result).split(',')[1] ?? '');
+          reader.onerror = reject;
+          reader.readAsDataURL(audioBlob);
+        });
+        const transcriptionResponse = await fetch(`${process.env.EXPO_PUBLIC_DOMAIN ? `https://${process.env.EXPO_PUBLIC_DOMAIN}` : ''}/api/assistant/transcribe`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ audio: base64 }),
+        });
+        if (!transcriptionResponse.ok) throw new Error('Transcription failed');
+        const transcription = await transcriptionResponse.json() as { text?: string };
+        if (transcription.text) send(transcription.text);
       } catch {
         setVoiceError('Could not stop the recording. Please try again.');
+        setIsThinking(false);
       }
       return;
     }
