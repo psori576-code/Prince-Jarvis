@@ -1,0 +1,1 @@
+- [Prince Jarvis scope](prince-jarvis-scope.md) — first mobile release stays local-first; AI services and extra assistant modules are deferred.
