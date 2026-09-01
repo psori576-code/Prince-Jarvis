@@ -11,23 +11,19 @@ app.use(
     logger,
     serializers: {
       req(req) {
-        return {
-          id: req.id,
-          method: req.method,
-          url: req.url?.split("?")[0],
-        };
+        return { id: req.id, method: req.method, url: req.url?.split("?")[0] };
       },
       res(res) {
-        return {
-          statusCode: res.statusCode,
-        };
+        return { statusCode: res.statusCode };
       },
     },
   }),
 );
-app.use(cors());
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+
+app.disable("x-powered-by");
+app.use(cors({ origin: process.env.ALLOWED_ORIGIN?.split(",").map((v) => v.trim()).filter(Boolean) ?? true }));
+app.use(express.json({ limit: "64kb" }));
+app.use(express.urlencoded({ extended: true, limit: "64kb" }));
 
 app.use("/api", router);
 
