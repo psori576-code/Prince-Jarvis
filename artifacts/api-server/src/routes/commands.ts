@@ -1,4 +1,5 @@
 import { Router, type IRouter } from "express";
+import { requireServerToken } from "../middlewares/security";
 
 const router: IRouter = Router();
 
@@ -14,7 +15,7 @@ function parseCommand(input: string): { action: CommandAction; value?: string } 
   return { action: "unknown" };
 }
 
-router.post("/commands", (req, res) => {
+router.post("/commands", requireServerToken, (req, res) => {
   const command = typeof req.body?.command === "string" ? req.body.command : "";
   if (!command || command.length > 500) {
     res.status(400).json({ error: "command must be a non-empty string up to 500 characters" });
